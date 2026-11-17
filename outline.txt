@@ -1,0 +1,107 @@
+================================================================================
+OUTLINE BÁO CÁO BÀI TẬP LỚN - HỌC PHẦN: LẬP TRÌNH VỚI PYTHON (PTIT)
+================================================================================
+
+PHẦN THỦ TỤC & MỞ ĐẦU (Các trang đầu)
+--------------------------------------------------------------------------------
+1. Trang bìa:
+   - Tên trường: Học viện Công nghệ Bưu chính Viễn thông
+   - Tên khoa & Tên học phần: Lập trình với Python
+   - Tên đề tài
+   - Thông tin nhóm sinh viên thực hiện (Họ tên, Mã SV, Nhóm, Lớp)
+   - Giảng viên hướng dẫn
+   - Thời gian / Địa điểm
+
+2. Bảng phân công nhiệm vụ & Tự đánh giá nhóm:
+   - Bảng phân công công việc chi tiết theo từng thành viên (Backend, Frontend, Database, Báo cáo) và mốc thời gian hoàn thành.
+   - Bảng tự đánh giá mức độ tham gia, mức độ hoàn thành công việc và kỹ năng làm việc nhóm.
+
+3. Mục lục:
+   - Danh mục các chương, mục kèm số trang.
+
+4. Danh mục hình vẽ / Bảng biểu:
+   - Liệt kê các hình ảnh minh họa giao diện, sơ đồ và bảng biểu trong báo cáo.
+
+5. Lời mở đầu:
+   - Tính cấp thiết và bối cảnh thực tế của bài toán.
+   - Mục tiêu của đề tài và các đối tượng người dùng chính (ví dụ: Khách hàng/Sinh viên và Quản trị viên).
+   - Bố cục tóm tắt các chương trong báo cáo.
+
+
+CHƯƠNG 1. PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG
+--------------------------------------------------------------------------------
+1.1. Cơ sở lý thuyết và công nghệ sử dụng
+   - Ngôn ngữ & Framework chính: Python và Framework sử dụng (ví dụ: Django theo mô hình MTV – Model, Template, View; hoặc Flask/FastAPI...).
+   - Hệ quản trị cơ sở dữ liệu: SQLite / MySQL / PostgreSQL (nêu lý do lựa chọn, ví dụ: tích hợp sẵn với Django ORM).
+   - Các thư viện & công nghệ bổ trợ: Pillow (xử lý ảnh), python-dotenv (quản lý biến môi trường), HTML/CSS/JS/Bootstrap (giao diện).
+
+1.2. Xác định yêu cầu hệ thống
+   1.2.1. Yêu cầu chức năng:
+      - Đối với Người dùng / Khách hàng / Sinh viên (đăng ký, đăng nhập, xem/tìm kiếm, thực hiện nghiệp vụ chính...).
+      - Đối với Quản trị viên / Admin (quản lý danh mục, duyệt yêu cầu, thống kê doanh thu/dữ liệu...).
+   1.2.2. Yêu cầu phi chức năng:
+      - Giao diện thân thiện, tương thích nhiều thiết bị (Responsive).
+      - Bảo mật dữ liệu và phân quyền rõ ràng.
+      - Tính toàn vẹn dữ liệu, tốc độ phản hồi và khả năng mở rộng.
+
+1.3. Mô hình hóa và kiến trúc hệ thống
+   1.3.1. Sơ đồ quan hệ cơ sở dữ liệu (ERD / Quan hệ các Model):
+      - Liệt kê các bảng/model và mối quan hệ (One-to-One, ForeignKey, Many-to-Many).
+   1.3.2. Sơ đồ luồng hoạt động (Flowchart):
+      - Mô tả luồng di chuyển và xử lý nghiệp vụ chính từ lúc người dùng truy cập đến khi hoàn tất tác vụ.
+   1.3.3. Cấu trúc thư mục dự án (Project Structure):
+      - Cây thư mục mã nguồn và giải thích vai trò từng file/thư mục quan trọng (models.py, views.py, urls.py, forms.py, templates/, static/...).
+
+
+CHƯƠNG 2. XÂY DỰNG BACKEND VÀ CƠ SỞ DỮ LIỆU VỚI PYTHON
+--------------------------------------------------------------------------------
+(Chương trọng tâm chứng minh năng lực lập trình Python của nhóm)
+
+2.1. Thiết kế Cơ sở dữ liệu (models.py)
+   - Trình bày chi tiết từng class Model bằng code Python.
+   - Giải thích các trường dữ liệu, kiểu dữ liệu, khóa ngoại và các phương thức/thuộc tính tính toán tùy chỉnh (@property, override save()).
+
+2.2. Xây dựng các Form và kiểm tra dữ liệu (forms.py)
+   - Trình bày cách sử dụng Form hoặc ModelForm để nhận và validate dữ liệu đầu vào từ người dùng.
+
+2.3. Xây dựng logic xử lý nghiệp vụ (views.py)
+   - Trình bày các hàm (Function-based Views) hoặc lớp (Class-based Views) xử lý các luồng nghiệp vụ cốt lõi:
+     + Xác thực & phân quyền người dùng (Đăng ký, Đăng nhập, kiểm tra quyền @login_required, UserPassesTestMixin).
+     + Các chức năng nghiệp vụ chính (Tìm kiếm, lọc dữ liệu, thêm/sửa/xóa, duyệt yêu cầu, thanh toán...).
+     + Xử lý giao dịch an toàn (ví dụ: dùng transaction.atomic() để đảm bảo tính toàn vẹn dữ liệu).
+
+2.4. Cấu hình định tuyến URL (urls.py)
+   - Bảng hoặc sơ đồ ánh xạ đường dẫn URL cấp project và cấp app tới các hàm xử lý trong views.py.
+
+2.5. Tùy chỉnh trang quản trị (admin.py) & Các tiện ích mở rộng
+   - Cách đăng ký và tùy biến giao diện quản trị (list_display, search_fields, phân quyền tự động).
+   - Các kỹ thuật Python/Django bổ sung (nếu có): Signals, Custom Template Tags/Filters, gửi email, v.v.
+
+
+CHƯƠNG 3. THIẾT KẾ GIAO DIỆN NGƯỜI DÙNG VÀ TRIỂN KHAI
+--------------------------------------------------------------------------------
+3.1. Kiến trúc giao diện (Templates & Static files)
+   - Giải thích cơ chế kế thừa giao diện (ví dụ: base.html chứa header, navbar, footer chung cho các trang con) và cách tích hợp Bootstrap/CSS/JS.
+
+3.2. Minh họa luồng hoạt động và giao diện thực tế
+   - Chụp màn hình và mô tả ngắn gọn từng giao diện theo đúng trình tự sử dụng của người dùng:
+     + Nhóm giao diện công khai & xác thực: Trang chủ, Trang đăng ký, Trang đăng nhập.
+     + Nhóm giao diện chức năng chính của người dùng: Trang danh sách/chi tiết, Dashboard cá nhân, Trang thực hiện nghiệp vụ (giỏ hàng/thanh toán hoặc gửi yêu cầu...).
+     + Nhóm giao diện quản trị (Admin): Dashboard thống kê, Trang quản lý dữ liệu, duyệt yêu cầu.
+
+
+CHƯƠNG 4. KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
+--------------------------------------------------------------------------------
+4.1. Kết quả đạt được (Ưu điểm):
+   - Đánh giá những tính năng đã hoàn thiện, mức độ áp dụng kiến thức Python/Framework và hiệu quả vận hành.
+
+4.2. Hạn chế còn tồn tại (Nhược điểm):
+   - Thẳng thắn chỉ ra các tính năng chưa kịp làm hoặc điểm yếu về hiệu năng, bảo mật, giao diện.
+
+4.3. Hướng phát triển trong tương lai:
+   - Đề xuất các nâng cấp cụ thể (xây dựng REST API cho mobile app, tích hợp cổng thanh toán thực tế, xuất báo cáo Excel/PDF, triển khai lên server/cloud...).
+
+
+TÀI LIỆU THAM KHẢO
+--------------------------------------------------------------------------------
+- Liệt kê theo chuẩn trích dẫn các tài liệu chính thức (Python Docs, Django/Flask Docs, Bootstrap Docs, các bài hướng dẫn kỹ thuật đã tham khảo).
