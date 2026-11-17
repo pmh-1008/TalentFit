@@ -1,18 +1,28 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_user
-from ..models import CandidateProfile, Company, User
+from ..models import Company, User
 from ..schemas import CandidateRegisterIn, CompanyRegisterIn, LoginIn, PasswordIn, ProfileIn
 from ..security import create_token, hash_password, verify_password
-from ..utils import user_to_dict
+from ..serializers import user_to_dict
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def _token_response(user: User) -> dict:
     return {"access_token": create_token(user.id, user.role), "user": user_to_dict(user)}
+
+
+def _commit_unique(db: Session, message: str) -> None:
+    """Hai yêu cầu đăng ký trùng nhau cùng lúc: ràng buộc UNIQUE từ chối bản thứ hai, trả 409 thay vì 500."""
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, message)
 
 
 @router.post("/register/candidate", status_code=201)
@@ -23,9 +33,7 @@ def register_candidate(body: CandidateRegisterIn, db: Session = Depends(get_db))
     user = User(email=email, password_hash=hash_password(body.password), role="candidate",
                 full_name=body.full_name.strip(), phone=body.phone.strip())
     db.add(user)
-    db.flush()  # sinh user.id trước khi tạo hồ sơ
-    db.add(CandidateProfile(user_id=user.id))
-    db.commit()
+    _commit_unique(db, "Email đã được sử dụng")
     return _token_response(user)
 
 
@@ -43,7 +51,7 @@ def register_company(body: CompanyRegisterIn, db: Session = Depends(get_db)):
     user = User(email=email, password_hash=hash_password(body.password), role="recruiter",
                 full_name=body.full_name.strip() or "HR", phone=body.phone.strip(), company_id=company.id)
     db.add(user)
-    db.commit()
+    _commit_unique(db, "Email hoặc tên công ty đã được sử dụng")
     db.refresh(user)
     return _token_response(user)
 

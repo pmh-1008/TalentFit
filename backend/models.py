@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, CheckConstraint, Date, DateTime, Float, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -28,6 +28,7 @@ class Company(Base):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (CheckConstraint("role IN ('candidate', 'recruiter')", name="ck_users_role"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
@@ -46,6 +47,8 @@ class CandidateProfile(Base):
     __tablename__ = "candidate_profiles"
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    github: Mapped[str] = mapped_column(String(255), default="")
+    linkedin: Mapped[str] = mapped_column(String(255), default="")
     summary: Mapped[str] = mapped_column(Text, default="")
     education: Mapped[list] = mapped_column(JSON, default=list)
     experience: Mapped[list] = mapped_column(JSON, default=list)
@@ -56,6 +59,10 @@ class CandidateProfile(Base):
 
 class Job(Base):
     __tablename__ = "jobs"
+    __table_args__ = (
+        CheckConstraint("status IN ('open', 'closed')", name="ck_jobs_status"),
+        Index("ix_jobs_company_status_deadline", "company_id", "status", "deadline"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     company_id: Mapped[str] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"), index=True)
@@ -68,11 +75,11 @@ class Job(Base):
     email: Mapped[str] = mapped_column(String(255), default="")
     phone: Mapped[str] = mapped_column(String(30), default="")
     status: Mapped[str] = mapped_column(String(10), default="open", index=True)  # open | closed
-    opened_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     open_date: Mapped[date] = mapped_column(Date, default=date.today)
     closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     decisions_finalized: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0", nullable=False)
-    deadline: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    deadline: Mapped[date] = mapped_column(Date)
     benefits: Mapped[str] = mapped_column(Text, default="")
 
     company: Mapped[Company] = relationship(lazy="joined")
@@ -92,7 +99,12 @@ class CustomCV(Base):
 
 class Application(Base):
     __tablename__ = "applications"
-    __table_args__ = (UniqueConstraint("job_id", "candidate_id", name="uq_application"),)
+    __table_args__ = (
+        UniqueConstraint("job_id", "candidate_id", name="uq_application"),
+        CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="ck_applications_status"),
+        CheckConstraint("draft_decision IS NULL OR draft_decision IN ('approved', 'rejected')",
+                        name="ck_applications_draft_decision"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), index=True)
@@ -124,6 +136,7 @@ class MatchResult(Base):
 
 class Notification(Base):
     __tablename__ = "notifications"
+    __table_args__ = (Index("ix_notifications_user_read", "user_id", "is_read"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)

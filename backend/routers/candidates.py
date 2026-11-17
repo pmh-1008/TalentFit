@@ -5,7 +5,7 @@ from ..database import get_db
 from ..deps import candidate_only
 from ..models import CandidateProfile, CustomCV, Job, User
 from ..schemas import CVData
-from ..utils import cv_from_profile
+from ..services.cv import cv_from_profile
 
 router = APIRouter(prefix="/candidates", tags=["candidates"])
 
@@ -21,6 +21,8 @@ def save_cv(body: CVData, user: User = Depends(candidate_only), db: Session = De
     if not profile:
         profile = CandidateProfile(user_id=user.id)
         db.add(profile)
+    profile.github = body.github.strip()
+    profile.linkedin = body.linkedin.strip()
     profile.summary = body.summary
     profile.education = [e.model_dump() for e in body.education]
     profile.experience = [e.model_dump() for e in body.experience]

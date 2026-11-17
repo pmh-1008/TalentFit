@@ -2,7 +2,8 @@ import streamlit as st
 
 import api_client as api
 import styles
-from views import auth_view, candidate, common, recruiter
+import helpers
+from views import account, auth_view, candidate, home, recruiter
 
 st.set_page_config(page_title="TalentFit", page_icon="◆", layout="wide", initial_sidebar_state="collapsed")
 styles.inject()
@@ -42,7 +43,7 @@ def topbar(user: dict | None, pages: list[str]) -> str:
     unread = 0
     if has_bell:
         try:
-            unread = api.get("/notifications")["unread"]
+            unread = api.get("/notifications/unread-count", cache=True)["unread"]
         except api.ApiError as e:
             st.warning(f"Không tải được thông báo: {e}")
     page = st.session_state.get("page")
@@ -85,10 +86,10 @@ def main():
             page = st.session_state["page"] = "Trang chủ"
         if page == "Trang chủ":
             page = topbar(None, [])
-        common.show_flash()
+        helpers.show_flash()
         try:
             if page == "Trang chủ":
-                candidate.public_home_page()
+                home.render()
             else:
                 auth_view.render(default_tab=page)
         except api.ApiError as e:
@@ -97,12 +98,12 @@ def main():
 
     module = candidate if user["role"] == "candidate" else recruiter
     page = topbar(user, module.PAGES)
-    common.show_flash()
+    helpers.show_flash()
     try:
         if page == "profile":
-            common.profile_page(user)
+            account.profile_page(user)
         elif page == "password":
-            common.password_page()
+            account.password_page()
         else:
             module.ROUTES[page]()
     except api.ApiError as e:

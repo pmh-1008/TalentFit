@@ -1,12 +1,14 @@
 import hashlib
 import json
 from concurrent.futures import ThreadPoolExecutor
+from collections import Counter
 from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from ..config import settings
-from ..models import Job, MatchResult
+from ..models import Application, Job, MatchResult
+from ..schemas import requirements_text
 from . import llm
 
 
@@ -18,7 +20,7 @@ def _hash(obj) -> str:
 def jd_payload(job: Job) -> dict:
     return {
         "title": job.title, "company": job.company.name, "description": job.description,
-        "requirements": job.requirements or {},
+        "requirements": requirements_text(job.requirements),
     }
 
 
@@ -39,6 +41,39 @@ def get_cached(db: Session, job: Job, user_id: str, cv: dict) -> Optional[MatchR
     return db.query(MatchResult).filter_by(
         job_id=job.id, user_id=user_id, jd_hash=_hash(jd_payload(job)), cv_hash=_hash(cv_payload(cv))
     ).first()
+
+
+def get_cached_many(db: Session, job: Job, applications: list[Application]) -> dict[str, Optional[MatchResult]]:
+    """Điểm đã chấm của từng đơn (khóa là application.id), lấy bằng một truy vấn."""
+    if not applications:
+        return {}
+    rows = db.query(MatchResult).filter(
+        MatchResult.job_id == job.id, MatchResult.jd_hash == _hash(jd_payload(job)),
+        MatchResult.user_id.in_({a.candidate_id for a in applications})).all()
+    by_key = {(r.user_id, r.cv_hash): r for r in rows}
+    return {a.id: by_key.get((a.candidate_id, _hash(cv_payload(a.cv_data)))) for a in applications}
+
+
+# Mỗi ứng viên + tin có tối đa 2 CV "đang dùng" (bản chụp khi nộp đơn và CV hiện tại); giữ dư một bản
+# để không xóa nhầm khi hai bản chấm trong cùng một giây.
+KEEP_PER_CANDIDATE = 3
+
+
+def prune_stale(db: Session, job_ids: set[str], current_jd_hashes: dict[str, str]) -> int:
+    """Xóa điểm cũ không còn dùng tới: JD đã sửa, hoặc quá KEEP_PER_CANDIDATE bản chấm của một ứng viên."""
+    removed = 0
+    for job_id in job_ids:
+        removed += db.query(MatchResult).filter(
+            MatchResult.job_id == job_id, MatchResult.jd_hash != current_jd_hashes[job_id]).delete()
+        seen: Counter = Counter()
+        rows = db.query(MatchResult).filter_by(job_id=job_id).order_by(
+            MatchResult.user_id, MatchResult.created_at.desc()).all()
+        for row in rows:
+            seen[row.user_id] += 1
+            if seen[row.user_id] > KEEP_PER_CANDIDATE:
+                db.delete(row)
+                removed += 1
+    return removed
 
 
 def score_many(db: Session, tasks: list[tuple[Job, str, dict]], force: bool = False) -> list[MatchResult]:
@@ -75,6 +110,8 @@ def score_many(db: Session, tasks: list[tuple[Job, str, dict]], force: bool = Fa
             row = MatchResult(job_id=job_id, user_id=uid, jd_hash=jh, cv_hash=ch, **out)
             db.add(row)
             results[i] = row
+        db.flush()
+        prune_stale(db, {t[1] for t in todo}, {t[1]: t[5] for t in todo})
         db.commit()
 
     if errors:

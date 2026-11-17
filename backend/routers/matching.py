@@ -3,11 +3,12 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
-from ..deps import candidate_only, recruiter_only
+from ..deps import candidate_only, own_job, recruiter_only
 from ..models import Application, Job, User
 from ..schemas import CompareIn
 from ..services import matching
-from ..utils import cv_is_empty, effective_cv, job_to_dict
+from ..serializers import job_to_dict
+from ..services.cv import cv_is_empty, effective_cv
 
 router = APIRouter(prefix="/matching", tags=["matching"])
 
@@ -43,9 +44,7 @@ def rank_jobs(body: CompareIn, user: User = Depends(candidate_only), db: Session
 def score_applicants(job_id: str, force: bool = False, user: User = Depends(recruiter_only),
                      db: Session = Depends(get_db)):
     """Nhà tuyển dụng: chấm điểm bằng LLM cho các ứng viên của một job."""
-    job = db.get(Job, job_id)
-    if not job or job.company_id != user.company_id:
-        raise HTTPException(404, "Không tìm thấy tin tuyển dụng")
+    job = own_job(db, user, job_id)
     apps = db.query(Application).filter_by(job_id=job.id).all()
     if not apps:
         raise HTTPException(400, "Tin này chưa có ứng viên")
